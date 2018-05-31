@@ -34,7 +34,7 @@ app.post('/checkout', (req, res) => {
         privateKey: '86fb4e22929a369781d9c4d59aded9f3'
     })
     var nonce = req.body.paymentPayload
-    var total = req.body.cost
+    var total = req.body.amount
 
     console.log(nonce)
     var newTransaction = gateway.transaction.sale({
