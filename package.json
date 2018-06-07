@@ -14,6 +14,7 @@
     "axios": "^0.18.0",
     "braintree": "^2.10.0",
     "cors": "^2.8.4",
+    "dotenv": "^5.0.1",
     "eslint": "^4.19.1",
     "express": "^4.16.3",
     "firebase": "^5.0.4",

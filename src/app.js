@@ -4,8 +4,10 @@ const bodyParser = require('body-parser')
 const logger = require('morgan')
 const router = express.Router(); // eslint-disable-line new-cap
 const braintree = require('braintree')
+const gateway = require('../lib/gateway')
 const cors = require('cors')
 const app = express()
+var newCustomer = null
 const admin = require('firebase-admin')
 var serviceAccount = require('./service.json')
 
@@ -25,17 +27,32 @@ var config = {
   };
 admin.initializeApp(config);
 
-app.get('/getClientId', (req, res) => {
-    var gateway = braintree.connect({
-        environment: braintree.Environment.Sandbox,
-        merchantId: 'rhnyxxfd2wmyp5bn',
-        publicKey: 'nsx79wwcjj5tbsnj',
-        privateKey: '86fb4e22929a369781d9c4d59aded9f3'
+app.post('/createCustomerId', (req, res) => {
+    var nonce = req.body.paymentPayload
+    gateway.customer.create({
+        paymentMethodNonce: nonce,
+        creditCard: {
+            options: {
+                verifyCard: true
+            }        
+        }
+    }, function(err, result) {
+        if(result.success) {
+            newCustomer = result.customer.id
+            console.log(newCustomer)
+            res.send(newCustomer)
+        } else {
+            res.status(500).send(err)
+        }
     })
+})
 
-    gateway.clientToken.generate({},function (err, response) {
+app.get('/getClientId', (req, res) => {
+    gateway.clientToken.generate({
+        customerId: newCustomer
+    },function (err, response) {
+        console.log(newCustomer)
         res.send(response.clientToken)
-        // console.log(response.clientToken)
     })
 })
 
@@ -87,17 +104,11 @@ app.get('/acceptRide', (req, res) => {
 })
 
 app.post('/checkout', (req, res) => {
-    var gateway = braintree.connect({
-        environment: braintree.Environment.Sandbox,
-        merchantId: 'rhnyxxfd2wmyp5bn',
-        publicKey: 'nsx79wwcjj5tbsnj',
-        privateKey: '86fb4e22929a369781d9c4d59aded9f3'
-    })
     var nonce = req.body.paymentPayload
     var total = req.body.amount
 
     console.log(nonce)
-    var newTransaction = gateway.transaction.sale({
+    gateway.transaction.sale({
         amount: total,
         paymentMethodNonce: nonce,
         options: {
@@ -105,7 +116,8 @@ app.post('/checkout', (req, res) => {
         }
     }, function (err, result) {
             if(result.success || result.transaction){
-                res.send(result)
+                // console.log(result.transaction.creditCard.last4)
+                res.send(result.transaction.creditCard.last4)
             } else {
                 res.status(500).send(err)
             }
